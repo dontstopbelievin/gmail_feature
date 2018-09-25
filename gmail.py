@@ -11,8 +11,9 @@ import urllib.request
 import time
 
 # Crawl phones numbers from smsreceivefree to file numbers.csv
-# Run once and can be commented next run
-#import phones
+import os.path
+if not os.path.isfile("numbers.csv"):
+	import phones
 # Class to grab verf code from smsreceivefree.com
 import verification_code
 
@@ -28,17 +29,26 @@ class wait_for_any_text(object):
 
 class GmailSignup(object):
 
-	def __init__(self, firstname, lastname, username, password, phone_number, phone_link):
+	def __init__(self, firstname, lastname, username, password, phone_number, phone_link, my_host, my_port):
 		self.url = f"https://accounts.google.com/signup/v2/webcreateaccount?service=mail&continue=https%3A%2F%2Fmail.google.com%2Fmail%2F&ltmpl=default&flowName=GlifWebSignIn&flowEntry=SignUp"
-		self.driver = webdriver.Firefox()
+		self.driver = webdriver.Firefox(firefox_profile=self.setProxy(my_host, my_port))
 		self.firstname = firstname
 		self.lastname = lastname
 		self.username = username
 		self.password = password
 		self.phone_number = phone_number
 		self.phone_link = phone_link
-		self.delay = 3
+		self.delay = 20
 		self.ver_code = ''
+
+	def setProxy(self, my_host, my_port):
+		profile = webdriver.FirefoxProfile()
+		profile.set_preference("network.proxy.type", 1)
+		profile.set_preference("network.proxy.http", my_host)
+		profile.set_preference("network.proxy.http_port", my_port)
+		profile.set_preference("network.proxy.ssl", my_host)
+		profile.set_preference("network.proxy.ssl_port", my_port)
+		return profile
 
 	def laod_url(self):
 		self.driver.get(self.url)
@@ -94,7 +104,7 @@ class GmailSignup(object):
 			self.quit()
 		
 		try:
-			wait = WebDriverWait(self.driver, 10)
+			wait = WebDriverWait(self.driver, self.delay)
 			wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "bu0")))
 			print("Google welcome page loaded")
 			if self.driver.find_element_by_class_name('bu0').text.strip() == 'Добро пожаловать!':
@@ -184,22 +194,18 @@ for line in lines:
 # Sign up credentials
 firstname = 'app'
 lastname = 'app'
-user_number = 10
+user_number = 3
 password = '123123Aa'
 
-# Dynamic username in loop by increment user_number
-username = f"sendmailapp{user_number}"
+#Free proxy credentials
+MY_HOST = "158.58.133.41"
+MY_PORT = 32231
 
-#need to use proxies in url
-
-#pass phones with check
-
-#for i in range(len(arr_phones)):
-#	if arr_phones[i] == '+16808001912':
-#		print(i)
+#not done: pass phones with check
 
 for i in range(len(arr_phones)):
-	gmail_page = GmailSignup(firstname, lastname, username, password, arr_phones[i], arr_links[i])
+	username = f"astanamailer{user_number}"
+	gmail_page = GmailSignup(firstname, lastname, username, password, arr_phones[i], arr_links[i], MY_HOST, MY_PORT)
 	gmail_page.laod_url()
 	gmail_page.sign_up()
 
@@ -207,6 +213,7 @@ for i in range(len(arr_phones)):
 		print('Number accepted')
 		gmail_page.fill_in_info()
 		gmail_page.confirm_rules()
+		user_number += 1
 	else:
 		print('Sending sms')
 		if gmail_page.send_sms() == False:
@@ -217,5 +224,5 @@ for i in range(len(arr_phones)):
 		gmail_page.submit_code()
 		gmail_page.fill_in_info()
 		gmail_page.confirm_rules()
-		break
+		user_number += 1
 	#gmail_page.quit()
