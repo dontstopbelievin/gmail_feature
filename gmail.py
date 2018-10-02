@@ -31,7 +31,8 @@ class GmailSignup(object):
 
 	def __init__(self, firstname, lastname, username, password, phone_number, phone_link, my_host, my_port):
 		self.url = f"https://accounts.google.com/signup/v2/webcreateaccount?service=mail&continue=https%3A%2F%2Fmail.google.com%2Fmail%2F&ltmpl=default&flowName=GlifWebSignIn&flowEntry=SignUp"
-		self.driver = webdriver.Firefox(firefox_profile=self.setProxy(my_host, my_port))
+		#self.driver = webdriver.Firefox(firefox_profile=self.setProxy(my_host, my_port))
+		self.driver = webdriver.Firefox()
 		self.firstname = firstname
 		self.lastname = lastname
 		self.username = username
@@ -54,7 +55,7 @@ class GmailSignup(object):
 		self.driver.get(self.url)
 		try:
 			wait = WebDriverWait(self.driver, self.delay)
-			wait.until(EC.presence_of_element_located((By.ID, "username")))
+			wait.until(EC.element_to_be_clickable((By.ID, "username")))
 			print("Sign up page is ready")
 		except TimeoutException:
 			print("Loading took too much time")
@@ -67,11 +68,18 @@ class GmailSignup(object):
 		self.driver.find_element_by_name('Passwd').send_keys(self.password)
 		self.driver.find_element_by_name('ConfirmPasswd').send_keys(self.password)
 		self.driver.find_element_by_id('accountDetailsNext').click()
+		try:
+			wait = WebDriverWait(self.driver, self.delay)
+			wait.until(EC.presence_of_element_located((By.ID, "headingText")))
+			print("Sign up page proccessed")
+		except TimeoutException:
+			print("Loading took too much time")
+			self.quit()
 
 	def fill_in_info(self):
 		try:
 			wait = WebDriverWait(self.driver, self.delay)
-			wait.until(EC.presence_of_element_located((By.ID, "phoneNumberId")))
+			wait.until(EC.element_to_be_clickable((By.ID, "phoneNumberId")))
 			print("Fill in info page is ready")
 		except TimeoutException:
 			print("Loading took too much time")
@@ -118,7 +126,7 @@ class GmailSignup(object):
 	def send_sms(self):
 		try:
 			wait = WebDriverWait(self.driver, self.delay)
-			wait.until(EC.presence_of_element_located((By.ID, "phoneNumberId")))
+			wait.until(EC.element_to_be_clickable((By.ID, "phoneNumberId")))
 			print("Send sms page is ready")
 		except TimeoutException:
 			print("Loading took too much time")
@@ -147,7 +155,7 @@ class GmailSignup(object):
 		counter = 1
 		obj = verification_code.Phone_Messages(self.phone_link)
 		while not obj.get_code():
-			if counter == 60:
+			if counter == 30:
 				print("Too many tries to grab code")
 				self.quit()
 			time.sleep(1)
@@ -159,7 +167,7 @@ class GmailSignup(object):
 	def submit_code(self):
 		try:
 			wait = WebDriverWait(self.driver, self.delay)
-			wait.until(EC.presence_of_element_located((By.ID, "code")))
+			wait.until(EC.element_to_be_clickable((By.ID, "code")))
 			print("Page is ready")
 		except TimeoutException:
 			print("Loading took too much time")
@@ -169,7 +177,7 @@ class GmailSignup(object):
 
 	def quit(self):
 		print('Used number: ' + self.phone_number)
-		self.driver.close()
+		#self.driver.close()
 		#exit()
 
 # Main application Runner:
@@ -194,7 +202,7 @@ for line in lines:
 # Sign up credentials
 firstname = 'app'
 lastname = 'app'
-user_number = 3
+user_number = 4
 password = '123123Aa'
 
 #Free proxy credentials
