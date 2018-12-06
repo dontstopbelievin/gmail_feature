@@ -13,7 +13,7 @@ class Phone_Messages(object):
 		self.request = urllib.request.Request( self.my_url, None, self.headers)
 		self.response = ''
 
-	def get_code(self):
+	def grab_code(self):
 		uClient = uReq(self.request)
 		page_html = uClient.read()
 		uClient.close()
@@ -28,5 +28,6 @@ class Phone_Messages(object):
 					strs2 = strs[1].split("–")
 					if len(strs2) == 2 and strs2[1].strip() == 'Ваш проверочный код.':
 						self.response = strs2[0]
+						print("verification code grabbed")
 						return True
 		return False

@@ -10,27 +10,20 @@ from bs4 import BeautifulSoup
 import urllib.request
 import time
 
-# Crawl phones numbers from smsreceivefree to file numbers.csv
 import os.path
+# Check if file with phone numbers exist
 if not os.path.isfile("numbers.csv"):
+	# Crawl phones numbers from smsreceivefree to file numbers.csv
 	import phones
-# Class to grab verf code from smsreceivefree.com
+
+# Class with method to grab verification code from smsreceivefree.com
 import verification_code
-
-class wait_for_any_text(object):
-    def __init__(self, locator):
-        self.locator = locator
-
-    def __call__(self, driver):
-        try:
-            return len(EC._find_element(driver, self.locator).text.strip())
-        except StaleElementReferenceException:
-            return False
 
 class GmailSignup(object):
 
 	def __init__(self, firstname, lastname, username, password, phone_number, phone_link, my_host, my_port):
 		self.url = f"https://accounts.google.com/signup/v2/webcreateaccount?service=mail&continue=https%3A%2F%2Fmail.google.com%2Fmail%2F&ltmpl=default&flowName=GlifWebSignIn&flowEntry=SignUp"
+		#only if proxy needed
 		#self.driver = webdriver.Firefox(firefox_profile=self.setProxy(my_host, my_port))
 		self.driver = webdriver.Firefox()
 		self.firstname = firstname
@@ -51,7 +44,7 @@ class GmailSignup(object):
 		profile.set_preference("network.proxy.ssl_port", my_port)
 		return profile
 
-	def laod_url(self):
+	def load_signup_page(self):
 		self.driver.get(self.url)
 		try:
 			wait = WebDriverWait(self.driver, self.delay)
@@ -153,13 +146,15 @@ class GmailSignup(object):
 
 	def get_code(self):
 		counter = 1
+		#Constructing class from file 'verification_code.py'
 		obj = verification_code.Phone_Messages(self.phone_link)
-		while not obj.get_code():
+		while not obj.grab_code():
 			if counter == 30:
 				print("Too many tries to grab code")
 				self.quit()
+				break;
 			time.sleep(1)
-			obj.get_code()
+			obj.grab_code()
 			print("get_code(): Trying again")
 			counter += 1
 		self.ver_code = obj.response
@@ -177,8 +172,18 @@ class GmailSignup(object):
 
 	def quit(self):
 		print('Used number: ' + self.phone_number)
-		#self.driver.close()
+		self.driver.close()
 		#exit()
+
+class wait_for_any_text(object):
+    def __init__(self, locator):
+        self.locator = locator
+
+    def __call__(self, driver):
+        try:
+            return len(EC._find_element(driver, self.locator).text.strip())
+        except StaleElementReferenceException:
+            return False
 
 # Main application Runner:
 # Put numbers from csv file to arr_phones
@@ -195,42 +200,43 @@ for line in lines:
 		arr_phones.append(items[1].strip())
 		arr_links.append(items[2].strip())
 
-# Array to keep track of phones that can register only 3 accounts
-# This is not used yet
-#phones_used_count = [0] * len(arr_phones)
-
 # Sign up credentials
 firstname = 'app'
 lastname = 'app'
-user_number = 4
+user_id = 5
 password = '123123Aa'
 
 #Free proxy credentials
 MY_HOST = "158.58.133.41"
 MY_PORT = 32231
 
-#not done: pass phones with check
+#skip first n numbers from array
+skip_numbers = 7
 
-for i in range(len(arr_phones)):
-	username = f"astanamailer{user_number}"
-	gmail_page = GmailSignup(firstname, lastname, username, password, arr_phones[i], arr_links[i], MY_HOST, MY_PORT)
-	gmail_page.laod_url()
+for i in range(len(arr_phones)-skip_numbers):
+	username = f"astanamailer{user_id}"
+	gmail_page = GmailSignup(firstname, lastname, username, password, arr_phones[i+skip_numbers], arr_links[i+skip_numbers], MY_HOST, MY_PORT)
+	gmail_page.load_signup_page()
 	gmail_page.sign_up()
 
 	if gmail_page.driver.find_element_by_id('headingText').text.strip() == 'Добро пожаловать в Google':
 		print('Number accepted')
 		gmail_page.fill_in_info()
 		gmail_page.confirm_rules()
-		user_number += 1
+		user_id += 1
 	else:
 		print('Sending sms')
 		if gmail_page.send_sms() == False:
 			continue
 		# Grab code from smsreceivefree.com
 		gmail_page.get_code()
-
 		gmail_page.submit_code()
 		gmail_page.fill_in_info()
 		gmail_page.confirm_rules()
-		user_number += 1
+		user_id += 1
 	#gmail_page.quit()
+
+# This is not used yet
+# Array to keep track of phones that can register only 3 accounts
+#phones_used_count = [0] * len(arr_phones)
+#pass phones with check

@@ -56,3 +56,4 @@ for container in containers:
 	x += 1
 
 f.close()
+print("numbers.csv with numbers created")
